@@ -15,13 +15,13 @@ RUN apk add --no-cache curl tar xz musl-dev gcc make cmake nasm lcms2-dev libpng
 WORKDIR /src
 
 # Sửa URL MozJPEG - Dùng dấu ngoặc kép và -L
-RUN curl -L "https://github.com" | tar -xz && \
+RUN curl -L "https://github.com/mozilla/mozjpeg/archive/refs/tags/v4.1.5.tar.gz" | tar -xz && \
     cd mozjpeg-4.1.5 && mkdir build_dir && cd build_dir && \
     cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . && \
     make -j"$(nproc)" && make install DESTDIR=/pkg-root
 
 # Sửa URL ImageMagick - Dùng server dự phòng ổn định hơn
-RUN curl -L "https://www.imagemagick.org" | tar -xJ && \
+RUN curl -L "https://www.imagemagick.org/download/releases/ImageMagick-6.9.13-41.tar.xz" | tar -xJ && \
     cd ImageMagick-6.9.13-41 && \
     ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared --with-cache=32GiB --without-x --with-xml && \
     make -j"$(nproc)" && make install DESTDIR=/pkg-root
