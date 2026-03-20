@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM docker.io/denoland/deno:alpine-2.3.5 AS asset-builder
 WORKDIR /weasyl-build
-# Cấp quyền cho user deno trước khi cài đặt
 RUN mkdir -p /weasyl-build/node_modules && chown -R deno:deno /weasyl-build
 USER deno
 COPY --link deno.json deno.lock ./
@@ -25,9 +24,10 @@ RUN apk add --no-cache wget musl-dev gcc make cmake nasm
 WORKDIR /mozjpeg-src
 RUN wget https://github.com -O mozjpeg.tar.gz \
     && tar xf mozjpeg.tar.gz
-WORKDIR /mozjpeg-src/mozjpeg-4.1.5/build
-RUN cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . \
-    && cmake --build . --parallel --target install DESTDIR=/mozjpeg-pkg
+# Dùng wildcard để tìm thư mục và build
+RUN cd mozjpeg-* && mkdir build && cd build && \
+    cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . && \
+    cmake --build . --parallel --target install DESTDIR=/mozjpeg-pkg
 
 FROM docker.io/library/alpine:3.22 AS imagemagick-build
 RUN apk add --no-cache wget musl-dev gcc make lcms2-dev libpng-dev libxml2-dev libwebp-dev zlib-dev
@@ -35,10 +35,10 @@ COPY --from=mozjpeg-build /mozjpeg-pkg/ /
 WORKDIR /im-src
 RUN wget https://imagemagick.org -O im.tar.xz \
     && tar xf im.tar.xz
-WORKDIR /im-src/ImageMagick-6.9.13-41
-RUN ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared \
-    --with-cache=32GiB --without-x --with-xml \
-    && make -j"$(nproc)" && make install DESTDIR="/im-pkg"
+# Dùng wildcard để tìm thư mục và configure
+RUN cd ImageMagick-* && ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared \
+    --with-cache=32GiB --without-x --with-xml && \
+    make -j"$(nproc)" && make install DESTDIR="/im-pkg"
 
 FROM docker.io/library/python:3.10-alpine3.22 AS bdist
 RUN apk add --no-cache gcc musl-dev libmemcached-dev zlib-dev libpq-dev
@@ -70,5 +70,4 @@ USER weasyl
 ENV PORT=8080
 ENV WEASYL_APP_ROOT=/weasyl
 EXPOSE 8080
-# Đảm bảo gunicorn sử dụng đúng đường dẫn venv
 CMD [".venv/bin/gunicorn", "-b", "0.0.0.0:8080", "weasyl.main:app"]
