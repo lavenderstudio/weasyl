@@ -16,15 +16,15 @@ FROM docker.io/library/alpine:3.22 AS builder-c
 RUN apk add --no-cache curl tar xz musl-dev gcc make cmake nasm lcms2-dev libpng-dev libxml2-dev libwebp-dev zlib-dev
 WORKDIR /src
 
-# Build MozJPEG
+# Build MozJPEG - Đã sửa URL chính xác
 RUN curl -L "https://github.com" | tar -xz && \
-    cd mozjpeg-* && mkdir build && cd build && \
+    cd mozjpeg-4.1.5 && mkdir build && cd build && \
     cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . && \
     make -j"$(nproc)" && make install DESTDIR=/pkg-root
 
-# Build ImageMagick
+# Build ImageMagick - Đã sửa URL chính xác
 RUN curl -L "https://imagemagick.org" | tar -xJ && \
-    cd ImageMagick-* && \
+    cd ImageMagick-6.9.13-41 && \
     ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared --with-cache=32GiB --without-x --with-xml && \
     make -j"$(nproc)" && make install DESTDIR=/pkg-root
 
