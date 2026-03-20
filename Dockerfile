@@ -51,14 +51,20 @@ RUN python3 -m venv .venv && \
     .venv/bin/python3 -m pip install --no-cache-dir -r poetry-requirements.txt && \
     .venv/bin/python3 -m pip install .
 
-# 4. Phân quyền và dọn dẹp
+# 4. Phân quyền và thiết lập môi trường
 RUN mkdir -p storage/log storage/static storage/profile-stats && chown -R weasyl /weasyl
-USER weasyl
-ENV PORT=8080
+
+# Thiết lập đường dẫn để Python tìm thấy module weasyl
+ENV PYTHONPATH=/weasyl
 ENV WEASYL_APP_ROOT=/weasyl
+ENV PORT=8080
+
+USER weasyl
 EXPOSE 8080
-# Sử dụng trực tiếp gunicorn từ venv để đảm bảo nhận diện được module weasyl
-CMD ["/weasyl/.venv/bin/gunicorn", "-c", "gunicorn.conf.py", "weasyl.wsgi:application"]
+
+# Lệnh khởi chạy chuẩn (Ép sử dụng gunicorn trong venv)
+CMD ["/weasyl/.venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--config", "gunicorn.conf.py", "weasyl.wsgi:application"]
+
 
 
 
