@@ -57,6 +57,7 @@ USER weasyl
 ENV PORT=8080
 ENV WEASYL_APP_ROOT=/weasyl
 EXPOSE 8080
-CMD [".venv/bin/gunicorn", "-c", "gunicorn.conf.py", "weasyl.wsgi:application"]
+CMD [".venv/bin/gunicorn", "-b", "0.0.0.0:8080", "weasyl.main:app"]
+
 
 
