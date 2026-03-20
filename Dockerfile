@@ -39,11 +39,13 @@ COPY --from=builder-c /pkg-root/ /
 # Copy tài nguyên frontend
 COPY --from=asset-builder /weasyl-build/build build
 
-# Cài đặt Python Dependencies
+# Cài đặt Python Dependencies (Đã sửa lỗi Hash)
 COPY poetry-requirements.txt pyproject.toml poetry.lock setup.py ./
 RUN python3 -m venv .venv && \
+    .venv/bin/python3 -m pip install --upgrade pip && \
+    sed -i 's/ --hash=.*//g' poetry-requirements.txt && \
     .venv/bin/python3 -m pip install -r poetry-requirements.txt && \
-    .venv/bin/python3 -m pip install .
+    .venv/bin/python3 -m pip install 
 
 # Copy mã nguồn
 COPY libweasyl libweasyl
