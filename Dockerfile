@@ -22,21 +22,20 @@ RUN mkdir build && deno run \
 FROM docker.io/library/alpine:3.22 AS mozjpeg-build
 RUN apk add --no-cache wget musl-dev gcc make cmake nasm
 WORKDIR /mozjpeg-src
-RUN wget https://github.com -O mozjpeg.tar.gz \
-    && tar xf mozjpeg.tar.gz
-# Dùng wildcard để tìm thư mục và build
-RUN cd mozjpeg-* && mkdir build && cd build && \
+# Sử dụng -L để theo dõi redirect và dấu ngoặc kép cho URL
+RUN wget -L "https://github.com" -O mozjpeg.tar.gz \
+    && tar -xzf mozjpeg.tar.gz
+RUN cd mozjpeg-4.1.5 && mkdir build && cd build && \
     cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . && \
-    cmake --build . --parallel --target install DESTDIR=/mozjpeg-pkg
+    make -j"$(nproc)" && make install DESTDIR=/mozjpeg-pkg
 
 FROM docker.io/library/alpine:3.22 AS imagemagick-build
 RUN apk add --no-cache wget musl-dev gcc make lcms2-dev libpng-dev libxml2-dev libwebp-dev zlib-dev
 COPY --from=mozjpeg-build /mozjpeg-pkg/ /
 WORKDIR /im-src
-RUN wget https://imagemagick.org -O im.tar.xz \
-    && tar xf im.tar.xz
-# Dùng wildcard để tìm thư mục và configure
-RUN cd ImageMagick-* && ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared \
+RUN wget -L "https://imagemagick.org" -O im.tar.xz \
+    && tar -xJf im.tar.xz
+RUN cd ImageMagick-6.9.13-41 && ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared \
     --with-cache=32GiB --without-x --with-xml && \
     make -j"$(nproc)" && make install DESTDIR="/im-pkg"
 
@@ -70,4 +69,5 @@ USER weasyl
 ENV PORT=8080
 ENV WEASYL_APP_ROOT=/weasyl
 EXPOSE 8080
+# Sử dụng CMD để chạy gunicorn trực tiếp
 CMD [".venv/bin/gunicorn", "-b", "0.0.0.0:8080", "weasyl.main:app"]
