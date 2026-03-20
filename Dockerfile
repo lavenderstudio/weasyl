@@ -63,7 +63,8 @@ USER weasyl
 EXPOSE 8080
 
 # Lệnh khởi chạy chuẩn (Ép sử dụng gunicorn trong venv)
-CMD ["/weasyl/.venv/bin/gunicorn", "-b", "0.0.0.0:8080", "--config", "gunicorn.conf.py", "weasyl.wsgi:application"]
+FROM docker.io/library/python:3.10-alpine3.22 AS package
+RUN apk add --no-cache libgcc libgomp lcms2 libpng libxml2 libwebpdemux libwebpmux libmemcached-libs libpq tiff libjpeg-turbo
 
 
 
