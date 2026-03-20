@@ -30,31 +30,33 @@ RUN curl -L "https://www.imagemagick.org/download/releases/ImageMagick-6.9.13-41
 FROM docker.io/library/python:3.10-alpine3.22
 RUN apk add --no-cache libgcc libgomp lcms2 libpng libxml2 libwebpdemux libwebpmux libmemcached-libs libpq \
     gcc musl-dev libmemcached-dev zlib-dev libpq-dev
-    
+
 RUN adduser -S weasyl -h /weasyl -u 1000
 WORKDIR /weasyl
 
-# Copy thư viện C
+# 1. Copy thư viện C và Assets đã build
 COPY --from=builder-c /pkg-root/ /
-# Copy tài nguyên frontend
 COPY --from=asset-builder /weasyl-build/build build
 
-# Cài đặt Python Dependencies (Bản sửa lỗi cuối cùng)
+# 2. Copy toàn bộ mã nguồn VÀ các file cấu hình TRƯỚC
 COPY poetry-requirements.txt pyproject.toml poetry.lock setup.py ./
+COPY libweasyl libweasyl
+COPY weasyl weasyl
+COPY gunicorn.conf.py ./
+
+# 3. Tiến hành cài đặt (Lúc này pip đã thấy thư mục weasyl)
 RUN python3 -m venv .venv && \
     .venv/bin/python3 -m pip install --upgrade pip && \
     sed -i 's/ --hash=.*//g' poetry-requirements.txt && \
     .venv/bin/python3 -m pip install --no-cache-dir -r poetry-requirements.txt && \
     .venv/bin/python3 -m pip install .
 
-# Copy mã nguồn
-COPY libweasyl libweasyl
-COPY weasyl weasyl
-COPY gunicorn.conf.py ./
-
+# 4. Phân quyền và dọn dẹp
 RUN mkdir -p storage/log storage/static storage/profile-stats && chown -R weasyl /weasyl
 USER weasyl
 ENV PORT=8080
 ENV WEASYL_APP_ROOT=/weasyl
 EXPOSE 8080
-CMD [".venv/bin/gunicorn", "-b", "0.0.0.0:8080", "weasyl.main:app"]
+CMD [".venv/bin/gunicorn", "-c", "gunicorn.conf.py", "weasyl.wsgi:application"]
+
+
