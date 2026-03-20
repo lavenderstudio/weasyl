@@ -23,8 +23,8 @@ FROM docker.io/library/alpine:3.22 AS mozjpeg-build
 RUN apk add --no-cache curl tar musl-dev gcc make cmake nasm
 WORKDIR /mozjpeg-src
 RUN curl -L "https://github.com" | tar -xz && \
-    mv mozjpeg-* source && mkdir build && cd build && \
-    cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S ../source -B . && \
+    cd mozjpeg-* && mkdir build && cd build && \
+    cmake -DENABLE_STATIC=0 -DPNG_SUPPORTED=0 -DCMAKE_INSTALL_PREFIX=/usr -S .. -B . && \
     make -j"$(nproc)" && make install DESTDIR=/mozjpeg-pkg
 
 FROM docker.io/library/alpine:3.22 AS imagemagick-build
@@ -32,7 +32,7 @@ RUN apk add --no-cache curl tar xz musl-dev gcc make lcms2-dev libpng-dev libxml
 COPY --from=mozjpeg-build /mozjpeg-pkg/ /
 WORKDIR /im-src
 RUN curl -L "https://imagemagick.org" | tar -xJ && \
-    mv ImageMagick-* source && cd source && \
+    cd ImageMagick-* && \
     ./configure --prefix=/usr --with-security-policy=websafe --disable-static --enable-shared \
     --with-cache=32GiB --without-x --with-xml && \
     make -j"$(nproc)" && make install DESTDIR="/im-pkg"
